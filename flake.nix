@@ -64,8 +64,6 @@
           drv = hexagonal-rust;
         };
 
-
-
         devShells.default = craneLib.devShell {
           checks = self.checks.${system};
 
