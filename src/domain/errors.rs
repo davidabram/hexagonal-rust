@@ -14,11 +14,11 @@ pub enum CreateSubscriptionError {
     MissingPaymentMethod(TenantId),
 
     #[error("an unexpected error occurred")]
-    Unknown(#[source] anyhow::Error),
+    Unexpected(#[source] anyhow::Error),
 }
 
-impl CreateSubscriptionError {
-    pub fn unknown(error: impl Into<anyhow::Error>) -> Self {
-        Self::Unknown(error.into())
+impl From<anyhow::Error> for CreateSubscriptionError {
+    fn from(error: anyhow::Error) -> Self {
+        Self::Unexpected(error)
     }
 }

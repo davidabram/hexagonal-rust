@@ -1,6 +1,18 @@
 #![allow(dead_code)]
 
 use anyhow::Context;
+use serde::Serialize;
+
+#[derive(Serialize)]
+struct CreateCustomerRequest<'a> {
+    email: &'a str,
+}
+
+#[derive(Serialize)]
+struct AddPaymentMethodRequest<'a> {
+    customer_id: &'a str,
+    token: &'a str,
+}
 
 #[allow(dead_code)]
 pub struct PaymentClient {
@@ -21,18 +33,18 @@ impl PaymentClient {
     pub async fn create_customer(&self, email: &str) -> Result<String, anyhow::Error> {
         let url = format!("{}/customers", self.base_url);
 
+        let request = CreateCustomerRequest { email };
+
         let response = self
             .http
             .post(&url)
             .bearer_auth(&self.api_key)
-            .json(&serde_json::json!({ "email": email }))
+            .json(&request)
             .send()
             .await
-            .context("failed to call payment provider /customers endpoint")?;
-
-        if !response.status().is_success() {
-            anyhow::bail!("payment provider returned status {}", response.status());
-        }
+            .context("failed to call payment provider /customers endpoint")?
+            .error_for_status()
+            .context("payment provider returned error status")?;
 
         let body: serde_json::Value = response
             .json()
@@ -54,21 +66,21 @@ impl PaymentClient {
     ) -> Result<String, anyhow::Error> {
         let url = format!("{}/payment_methods", self.base_url);
 
+        let request = AddPaymentMethodRequest {
+            customer_id,
+            token: payment_token,
+        };
+
         let response = self
             .http
             .post(&url)
             .bearer_auth(&self.api_key)
-            .json(&serde_json::json!({
-                "customer_id": customer_id,
-                "token": payment_token
-            }))
+            .json(&request)
             .send()
             .await
-            .context("failed to call payment provider /payment_methods endpoint")?;
-
-        if !response.status().is_success() {
-            anyhow::bail!("payment provider returned status {}", response.status());
-        }
+            .context("failed to call payment provider /payment_methods endpoint")?
+            .error_for_status()
+            .context("payment provider returned error status")?;
 
         let body: serde_json::Value = response
             .json()

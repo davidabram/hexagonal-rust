@@ -37,7 +37,7 @@ impl From<CreateSubscriptionError> for ApiError {
                 message: format!("Tenant {} has no active payment method on file", tenant_id),
                 code: 422,
             },
-            CreateSubscriptionError::Unknown(_source) => ApiError {
+            CreateSubscriptionError::Unexpected(_source) => ApiError {
                 message: "Internal server error".into(),
                 code: 500,
             },

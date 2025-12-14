@@ -1,5 +1,4 @@
 use anyhow::Context;
-use async_trait::async_trait;
 use sqlx::SqlitePool;
 use uuid::Uuid;
 
@@ -17,7 +16,6 @@ impl SqliteSubscriptionRepository {
     }
 }
 
-#[async_trait]
 impl SubscriptionRepository for SqliteSubscriptionRepository {
     async fn insert_subscription(
         &self,
@@ -25,13 +23,15 @@ impl SubscriptionRepository for SqliteSubscriptionRepository {
         plan_id: &PlanId,
     ) -> Result<Subscription, anyhow::Error> {
         let id = Uuid::new_v4().to_string();
+        let tenant_id_str = tenant_id.as_ref();
+        let plan_id_str = plan_id.as_ref();
 
-        sqlx::query(
-            "INSERT INTO subscriptions (id, tenant_id, plan_id, created_at) VALUES (?1, ?2, ?3, CURRENT_TIMESTAMP)"
+        sqlx::query!(
+            "INSERT INTO subscriptions (id, tenant_id, plan_id, created_at) VALUES (?1, ?2, ?3, CURRENT_TIMESTAMP)",
+            id,
+            tenant_id_str,
+            plan_id_str
         )
-        .bind(&id)
-        .bind(tenant_id.as_str())
-        .bind(plan_id.as_str())
         .execute(&self.pool)
         .await
         .context("failed to insert subscription into database")?;

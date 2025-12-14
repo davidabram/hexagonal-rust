@@ -36,7 +36,7 @@ where
             .plans
             .find_plan(&request.plan_id)
             .await
-            .map_err(CreateSubscriptionError::Unknown)?;
+            .map_err(CreateSubscriptionError::Unexpected)?;
 
         let plan = match plan {
             Some(p) => p,
@@ -59,7 +59,7 @@ where
                 .billing_profiles
                 .has_active_payment_method(&request.tenant_id)
                 .await
-                .map_err(CreateSubscriptionError::Unknown)?;
+                .map_err(CreateSubscriptionError::Unexpected)?;
 
             if !has_payment {
                 return Err(CreateSubscriptionError::MissingPaymentMethod(
@@ -72,7 +72,7 @@ where
             .subscriptions
             .insert_subscription(&request.tenant_id, &request.plan_id)
             .await
-            .map_err(CreateSubscriptionError::Unknown)?;
+            .map_err(CreateSubscriptionError::Unexpected)?;
 
         Ok(subscription)
     }
@@ -86,7 +86,6 @@ where
 mod tests {
     use super::*;
     use crate::domain::{PlanId, SubscriptionId};
-    use async_trait::async_trait;
     use std::sync::{Arc, Mutex};
 
     struct MockPlanRepository {
@@ -114,7 +113,6 @@ mod tests {
         }
     }
 
-    #[async_trait]
     impl PlanRepository for MockPlanRepository {
         async fn find_plan(&self, plan_id: &PlanId) -> Result<Option<Plan>, anyhow::Error> {
             let plans = self.plans.lock().unwrap();
@@ -126,7 +124,6 @@ mod tests {
         has_payment_method: bool,
     }
 
-    #[async_trait]
     impl BillingProfileRepository for MockBillingProfileRepository {
         async fn has_active_payment_method(
             &self,
@@ -138,7 +135,6 @@ mod tests {
 
     struct MockSubscriptionRepository;
 
-    #[async_trait]
     impl SubscriptionRepository for MockSubscriptionRepository {
         async fn insert_subscription(
             &self,

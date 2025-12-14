@@ -8,11 +8,11 @@ pub struct CreateSubscriptionHttpBody {
     pub plan_id: String,
 }
 
-impl CreateSubscriptionHttpBody {
-    pub fn into_domain(self) -> CreateSubscriptionRequest {
-        CreateSubscriptionRequest {
-            tenant_id: TenantId::new(self.tenant_id),
-            plan_id: PlanId::new(self.plan_id),
+impl From<CreateSubscriptionHttpBody> for CreateSubscriptionRequest {
+    fn from(body: CreateSubscriptionHttpBody) -> Self {
+        Self {
+            tenant_id: TenantId::new(body.tenant_id),
+            plan_id: PlanId::new(body.plan_id),
         }
     }
 }
@@ -28,9 +28,9 @@ pub struct SubscriptionResponse {
 impl From<Subscription> for SubscriptionResponse {
     fn from(s: Subscription) -> Self {
         Self {
-            id: s.id.as_str().to_string(),
-            tenant_id: s.tenant_id.as_str().to_string(),
-            plan_id: s.plan_id.as_str().to_string(),
+            id: s.id.as_ref().to_string(),
+            tenant_id: s.tenant_id.as_ref().to_string(),
+            plan_id: s.plan_id.as_ref().to_string(),
             created_at: s.created_at.to_rfc3339(),
         }
     }

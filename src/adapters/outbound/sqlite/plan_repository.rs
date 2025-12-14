@@ -1,9 +1,26 @@
 use anyhow::Context;
-use async_trait::async_trait;
 use sqlx::SqlitePool;
 
 use crate::domain::{Plan, PlanId};
 use crate::ports::PlanRepository;
+
+struct PlanRow {
+    id: String,
+    name: String,
+    max_seats: i64,
+    requires_card_on_file: bool,
+}
+
+impl From<PlanRow> for Plan {
+    fn from(row: PlanRow) -> Self {
+        Self {
+            id: PlanId::new(row.id),
+            name: row.name,
+            max_seats: row.max_seats as u32,
+            requires_card_on_file: row.requires_card_on_file,
+        }
+    }
+}
 
 #[derive(Clone)]
 pub struct SqlitePlanRepository {
@@ -16,24 +33,18 @@ impl SqlitePlanRepository {
     }
 }
 
-#[async_trait]
 impl PlanRepository for SqlitePlanRepository {
     async fn find_plan(&self, plan_id: &PlanId) -> Result<Option<Plan>, anyhow::Error> {
-        let row = sqlx::query_as::<_, (String, String, i32, bool)>(
-            "SELECT id, name, max_seats, requires_card_on_file FROM plans WHERE id = ?1",
+        let plan_id_str = plan_id.as_ref();
+        let row = sqlx::query_as!(
+            PlanRow,
+            r#"SELECT id as "id!", name as "name!", max_seats as "max_seats!", requires_card_on_file as "requires_card_on_file!" FROM plans WHERE id = ?1"#,
+            plan_id_str
         )
-        .bind(plan_id.as_str())
         .fetch_optional(&self.pool)
         .await
         .context("failed to fetch plan from database")?;
 
-        Ok(
-            row.map(|(id, name, max_seats, requires_card_on_file)| Plan {
-                id: PlanId::new(id),
-                name,
-                max_seats: max_seats as u32,
-                requires_card_on_file,
-            }),
-        )
+        Ok(row.map(Into::into))
     }
 }

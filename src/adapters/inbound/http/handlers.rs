@@ -39,7 +39,7 @@ where
     B: BillingProfileRepository + 'static,
     S: SubscriptionRepository + 'static,
 {
-    let request = body.into_domain();
+    let request = body.into();
 
     let subscription = state
         .subscription_service

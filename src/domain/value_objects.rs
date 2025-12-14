@@ -32,6 +32,12 @@ impl From<&str> for TenantId {
     }
 }
 
+impl AsRef<str> for TenantId {
+    fn as_ref(&self) -> &str {
+        &self.0
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct PlanId(pub String);
 
@@ -63,6 +69,12 @@ impl From<&str> for PlanId {
     }
 }
 
+impl AsRef<str> for PlanId {
+    fn as_ref(&self) -> &str {
+        &self.0
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct SubscriptionId(pub String);
 
@@ -91,5 +103,11 @@ impl From<String> for SubscriptionId {
 impl From<&str> for SubscriptionId {
     fn from(s: &str) -> Self {
         Self(s.to_string())
+    }
+}
+
+impl AsRef<str> for SubscriptionId {
+    fn as_ref(&self) -> &str {
+        &self.0
     }
 }
