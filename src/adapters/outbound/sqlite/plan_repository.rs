@@ -1,5 +1,6 @@
 use anyhow::Context;
 use sqlx::SqlitePool;
+use tracing::{error, instrument};
 
 use crate::domain::{Plan, PlanId};
 use crate::ports::PlanRepository;
@@ -34,6 +35,11 @@ impl SqlitePlanRepository {
 }
 
 impl PlanRepository for SqlitePlanRepository {
+    #[instrument(
+        name = "find_plan",
+        skip(self),
+        fields(db.system = "sqlite", plan_id = %plan_id)
+    )]
     async fn find_plan(&self, plan_id: &PlanId) -> Result<Option<Plan>, anyhow::Error> {
         let plan_id_str = plan_id.as_ref();
         let row = sqlx::query_as!(
@@ -43,7 +49,10 @@ impl PlanRepository for SqlitePlanRepository {
         )
         .fetch_optional(&self.pool)
         .await
-        .context("failed to fetch plan from database")?;
+        .context("failed to fetch plan from database")
+        .inspect_err(|e| {
+            error!(error = %e, plan_id = %plan_id, "plan query failed");
+        })?;
 
         Ok(row.map(Into::into))
     }

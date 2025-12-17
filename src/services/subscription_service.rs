@@ -1,3 +1,5 @@
+use tracing::{instrument, warn};
+
 use crate::domain::{
     CreateSubscriptionError, CreateSubscriptionRequest, Plan, Subscription, TenantId,
 };
@@ -28,6 +30,14 @@ where
         }
     }
 
+    #[instrument(
+        name = "create_subscription",
+        skip(self),
+        fields(
+            tenant_id = %request.tenant_id,
+            plan_id = %request.plan_id
+        )
+    )]
     pub async fn create_subscription(
         &self,
         request: &CreateSubscriptionRequest,
@@ -41,17 +51,17 @@ where
         let plan = match plan {
             Some(p) => p,
             None => {
-                return Err(CreateSubscriptionError::PlanNotFound(
-                    request.plan_id.clone(),
-                ))
+                let error = CreateSubscriptionError::PlanNotFound(request.plan_id.clone());
+                warn!(error = %error, "subscription creation failed");
+                return Err(error);
             }
         };
 
         if !self.tenant_allowed_on_plan(&request.tenant_id, &plan).await {
-            return Err(CreateSubscriptionError::PlanNotAllowed(
-                request.tenant_id.clone(),
-                plan.id.clone(),
-            ));
+            let error =
+                CreateSubscriptionError::PlanNotAllowed(request.tenant_id.clone(), plan.id.clone());
+            warn!(error = %error, "subscription creation failed");
+            return Err(error);
         }
 
         if plan.requires_card_on_file {
@@ -62,9 +72,10 @@ where
                 .map_err(CreateSubscriptionError::Unexpected)?;
 
             if !has_payment {
-                return Err(CreateSubscriptionError::MissingPaymentMethod(
-                    request.tenant_id.clone(),
-                ));
+                let error =
+                    CreateSubscriptionError::MissingPaymentMethod(request.tenant_id.clone());
+                warn!(error = %error, "subscription creation failed");
+                return Err(error);
             }
         }
 
@@ -77,6 +88,7 @@ where
         Ok(subscription)
     }
 
+    #[instrument(skip(self), fields(tenant_id = %_tenant_id, plan_id = %_plan.id))]
     async fn tenant_allowed_on_plan(&self, _tenant_id: &TenantId, _plan: &Plan) -> bool {
         true
     }

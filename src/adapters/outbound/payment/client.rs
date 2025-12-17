@@ -2,6 +2,7 @@
 
 use anyhow::Context;
 use serde::Serialize;
+use tracing::{error, instrument};
 
 #[derive(Serialize)]
 struct CreateCustomerRequest<'a> {
@@ -30,6 +31,15 @@ impl PaymentClient {
         }
     }
 
+    #[instrument(
+        name = "payment_create_customer",
+        skip(self),
+        fields(
+            http.method = "POST",
+            http.url = %format!("{}/customers", self.base_url),
+            customer.email = %email
+        )
+    )]
     pub async fn create_customer(&self, email: &str) -> Result<String, anyhow::Error> {
         let url = format!("{}/customers", self.base_url);
 
@@ -42,23 +52,46 @@ impl PaymentClient {
             .json(&request)
             .send()
             .await
-            .context("failed to call payment provider /customers endpoint")?
+            .context("failed to call payment provider /customers endpoint")
+            .inspect_err(|e| {
+                error!(error = %e, email = %email, "payment provider /customers request failed");
+            })?;
+
+        let response = response
             .error_for_status()
-            .context("payment provider returned error status")?;
+            .context("payment provider returned error status")
+            .inspect_err(|e| {
+                error!(error = %e, "payment provider returned error status");
+            })?;
 
         let body: serde_json::Value = response
             .json()
             .await
-            .context("failed to parse payment provider response JSON")?;
+            .context("failed to parse payment provider response JSON")
+            .inspect_err(|e| {
+                error!(error = %e, "failed to parse payment provider JSON response");
+            })?;
 
         let id = body
             .get("id")
             .and_then(|v| v.as_str())
-            .ok_or_else(|| anyhow::anyhow!("payment provider response missing `id` field"))?;
+            .ok_or_else(|| anyhow::anyhow!("payment provider response missing `id` field"))
+            .inspect_err(|e| {
+                error!(error = %e, "payment provider response missing `id` field");
+            })?;
 
         Ok(id.to_string())
     }
 
+    #[instrument(
+        name = "payment_add_payment_method",
+        skip(self, payment_token),
+        fields(
+            http.method = "POST",
+            http.url = %format!("{}/payment_methods", self.base_url),
+            customer_id = %customer_id
+        )
+    )]
     pub async fn add_payment_method(
         &self,
         customer_id: &str,
@@ -78,19 +111,33 @@ impl PaymentClient {
             .json(&request)
             .send()
             .await
-            .context("failed to call payment provider /payment_methods endpoint")?
+            .context("failed to call payment provider /payment_methods endpoint")
+            .inspect_err(|e| {
+                error!(error = %e, customer_id = %customer_id, "payment provider /payment_methods request failed");
+            })?;
+
+        let response = response
             .error_for_status()
-            .context("payment provider returned error status")?;
+            .context("payment provider returned error status")
+            .inspect_err(|e| {
+                error!(error = %e, "payment provider returned error status");
+            })?;
 
         let body: serde_json::Value = response
             .json()
             .await
-            .context("failed to parse payment provider response JSON")?;
+            .context("failed to parse payment provider response JSON")
+            .inspect_err(|e| {
+                error!(error = %e, "failed to parse payment provider JSON response");
+            })?;
 
         let id = body
             .get("id")
             .and_then(|v| v.as_str())
-            .ok_or_else(|| anyhow::anyhow!("payment provider response missing `id` field"))?;
+            .ok_or_else(|| anyhow::anyhow!("payment provider response missing `id` field"))
+            .inspect_err(|e| {
+                error!(error = %e, "payment provider response missing `id` field");
+            })?;
 
         Ok(id.to_string())
     }

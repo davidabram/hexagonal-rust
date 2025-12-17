@@ -1,5 +1,6 @@
 use anyhow::Context;
 use sqlx::SqlitePool;
+use tracing::{debug, error, instrument};
 use uuid::Uuid;
 
 use crate::domain::{PlanId, Subscription, SubscriptionId, TenantId};
@@ -17,6 +18,15 @@ impl SqliteSubscriptionRepository {
 }
 
 impl SubscriptionRepository for SqliteSubscriptionRepository {
+    #[instrument(
+        name = "insert_subscription",
+        skip(self),
+        fields(
+            db.system = "sqlite",
+            tenant_id = %tenant_id,
+            plan_id = %plan_id
+        )
+    )]
     async fn insert_subscription(
         &self,
         tenant_id: &TenantId,
@@ -26,6 +36,8 @@ impl SubscriptionRepository for SqliteSubscriptionRepository {
         let tenant_id_str = tenant_id.as_ref();
         let plan_id_str = plan_id.as_ref();
 
+        debug!(subscription_id = %id, "inserting subscription");
+
         sqlx::query!(
             "INSERT INTO subscriptions (id, tenant_id, plan_id, created_at) VALUES (?1, ?2, ?3, CURRENT_TIMESTAMP)",
             id,
@@ -34,7 +46,12 @@ impl SubscriptionRepository for SqliteSubscriptionRepository {
         )
         .execute(&self.pool)
         .await
-        .context("failed to insert subscription into database")?;
+        .context("failed to insert subscription into database")
+        .inspect_err(|e| {
+            error!(error = %e, subscription_id = %id, tenant_id = %tenant_id, plan_id = %plan_id, "subscription insert failed");
+        })?;
+
+        debug!(subscription_id = %id, "subscription inserted successfully");
 
         Ok(Subscription::new(
             SubscriptionId::new(id),
