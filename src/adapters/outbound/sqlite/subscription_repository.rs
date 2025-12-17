@@ -1,6 +1,6 @@
 use anyhow::Context;
 use sqlx::SqlitePool;
-use tracing::{debug, error, instrument};
+use tracing::{error, instrument};
 use uuid::Uuid;
 
 use crate::domain::{PlanId, Subscription, SubscriptionId, TenantId};
@@ -36,8 +36,6 @@ impl SubscriptionRepository for SqliteSubscriptionRepository {
         let tenant_id_str = tenant_id.as_ref();
         let plan_id_str = plan_id.as_ref();
 
-        debug!(subscription_id = %id, "inserting subscription");
-
         sqlx::query!(
             "INSERT INTO subscriptions (id, tenant_id, plan_id, created_at) VALUES (?1, ?2, ?3, CURRENT_TIMESTAMP)",
             id,
@@ -50,8 +48,6 @@ impl SubscriptionRepository for SqliteSubscriptionRepository {
         .inspect_err(|e| {
             error!(error = %e, subscription_id = %id, tenant_id = %tenant_id, plan_id = %plan_id, "subscription insert failed");
         })?;
-
-        debug!(subscription_id = %id, "subscription inserted successfully");
 
         Ok(Subscription::new(
             SubscriptionId::new(id),
