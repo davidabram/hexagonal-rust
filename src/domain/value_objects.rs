@@ -8,10 +8,6 @@ impl TenantId {
     pub fn new(id: impl Into<String>) -> Self {
         Self(id.into())
     }
-
-    pub fn as_str(&self) -> &str {
-        &self.0
-    }
 }
 
 impl fmt::Display for TenantId {
@@ -45,10 +41,6 @@ impl PlanId {
     pub fn new(id: impl Into<String>) -> Self {
         Self(id.into())
     }
-
-    pub fn as_str(&self) -> &str {
-        &self.0
-    }
 }
 
 impl fmt::Display for PlanId {
@@ -81,10 +73,6 @@ pub struct SubscriptionId(pub String);
 impl SubscriptionId {
     pub fn new(id: impl Into<String>) -> Self {
         Self(id.into())
-    }
-
-    pub fn as_str(&self) -> &str {
-        &self.0
     }
 }
 

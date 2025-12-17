@@ -15,7 +15,6 @@ struct AddPaymentMethodRequest<'a> {
     token: &'a str,
 }
 
-#[allow(dead_code)]
 pub struct PaymentClient {
     http: reqwest::Client,
     base_url: String,

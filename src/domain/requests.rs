@@ -6,8 +6,3 @@ pub struct CreateSubscriptionRequest {
     pub plan_id: PlanId,
 }
 
-impl CreateSubscriptionRequest {
-    pub fn new(tenant_id: TenantId, plan_id: PlanId) -> Self {
-        Self { tenant_id, plan_id }
-    }
-}

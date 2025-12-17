@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 mod adapters;
 mod domain;
 mod observability;

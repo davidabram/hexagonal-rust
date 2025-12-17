@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use axum::{http::StatusCode, response::IntoResponse, Json};
 use opentelemetry::trace::Status;
 use serde::Serialize;
@@ -16,31 +14,6 @@ pub struct ApiError {
     pub error_type: Option<String>,
     #[serde(skip)]
     pub error_attributes: HashMap<String, String>,
-}
-
-#[allow(dead_code)]
-impl ApiError {
-    #[allow(dead_code)]
-    pub fn new(message: impl Into<String>, code: u16) -> Self {
-        Self {
-            message: message.into(),
-            code,
-            error_type: None,
-            error_attributes: HashMap::new(),
-        }
-    }
-
-    #[allow(dead_code)]
-    pub fn with_type(mut self, error_type: impl Into<String>) -> Self {
-        self.error_type = Some(error_type.into());
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_attribute(mut self, key: impl Into<String>, value: impl Into<String>) -> Self {
-        self.error_attributes.insert(key.into(), value.into());
-        self
-    }
 }
 
 impl From<CreateSubscriptionError> for ApiError {
