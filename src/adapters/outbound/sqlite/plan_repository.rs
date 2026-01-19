@@ -44,7 +44,15 @@ impl PlanRepository for SqlitePlanRepository {
         let plan_id_str = plan_id.as_ref();
         let row = sqlx::query_as!(
             PlanRow,
-            r#"SELECT id as "id!", name as "name!", max_seats as "max_seats!", requires_card_on_file as "requires_card_on_file!" FROM plans WHERE id = ?1"#,
+            r#"
+                SELECT
+                    id as "id!",
+                    name as "name!",
+                    max_seats as "max_seats!",
+                    requires_card_on_file as "requires_card_on_file!"
+                FROM plans
+                WHERE id = ?1
+            "#,
             plan_id_str
         )
         .fetch_optional(&self.pool)
